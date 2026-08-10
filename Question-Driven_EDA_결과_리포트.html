@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Question-Driven EDA 결과 리포트</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { --ink:#171717; --muted:#666; --line:#d8d8d8; --soft:#f3f4f5; }
+    html, body { margin:0; background:#e9eaec; color:var(--ink); font-family:"Apple SD Gothic Neo","Noto Sans KR",Arial,sans-serif; }
+    body { padding:20px 0 50px; }
+    .toolbar { position:sticky; top:10px; z-index:20; width:210mm; margin:0 auto 14px; padding:10px 14px; background:#222; color:#fff; border-radius:7px; display:flex; align-items:center; gap:12px; font-size:12px; }
+    .toolbar button { border:0; border-radius:4px; padding:8px 14px; background:#fff; color:#111; font-weight:700; cursor:pointer; }
+    .toolbar input { width:110px; accent-color:#fff; }
+    .page { width:210mm; height:297mm; margin:0 auto 16px; padding:16mm 17mm; background:#fff; box-shadow:0 2px 14px #0002; overflow:hidden; page-break-after:always; break-after:page; }
+    .page:last-of-type { page-break-after:auto; break-after:auto; }
+    .cover { display:flex; flex-direction:column; }
+    .kicker { margin:0 0 9px; color:var(--muted); font-size:11px; letter-spacing:.08em; }
+    h1 { margin:0; font-size:28px; line-height:1.25; letter-spacing:-.04em; }
+    .rule { border:0; border-top:1px solid #222; margin:18px 0 16px; }
+    .meta { display:grid; grid-template-columns:90px 1fr; gap:7px 12px; font-size:12px; line-height:1.5; }
+    .meta b { font-weight:700; }
+    h2 { margin:18px 0 9px; padding-bottom:6px; border-bottom:1px solid #222; font-size:16px; letter-spacing:-.02em; }
+    h3 { margin:11px 0 5px; font-size:12.5px; }
+    p { margin:4px 0 8px; font-size:10.7px; line-height:1.62; text-align:justify; word-break:keep-all; }
+    .summary { margin-top:18px; padding:13px 15px; background:var(--soft); border-left:3px solid #333; }
+    .summary p { margin:0; font-size:11.2px; }
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0 5px; }
+    .stat { padding:10px 9px; border:1px solid var(--line); min-height:62px; }
+    .stat strong { display:block; margin-bottom:3px; font-size:18px; }
+    .stat span { color:var(--muted); font-size:9.4px; line-height:1.35; }
+    table { width:100%; border-collapse:collapse; margin:6px 0 10px; table-layout:fixed; font-size:9.3px; line-height:1.42; }
+    th, td { border:1px solid var(--line); padding:5px 6px; vertical-align:top; word-break:keep-all; }
+    th { background:var(--soft); text-align:left; font-weight:700; }
+    .two { display:grid; grid-template-columns:1fr 1fr; gap:13px; align-items:start; }
+    .note { padding:8px 10px; background:var(--soft); font-size:9.6px; line-height:1.5; }
+    .flow { display:flex; gap:5px; align-items:stretch; margin:8px 0 10px; }
+    .flow div { flex:1; padding:7px 5px; border:1px solid var(--line); text-align:center; font-size:8.7px; line-height:1.35; }
+    .flow i { align-self:center; font-style:normal; color:#777; font-size:12px; }
+    ul { margin:5px 0 8px; padding-left:17px; }
+    li { margin:3px 0; font-size:9.8px; line-height:1.45; }
+    code { padding:1px 4px; border-radius:3px; background:#eee; color:#111; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.92em; }
+    .compact h2 { margin-top:0; }
+    .compact p { font-size:10.1px; line-height:1.52; }
+    .compact table { font-size:8.9px; }
+    img.report-image { display:block; max-width:100%; height:auto; margin:8px auto; }
+    img.selected { outline:2px dashed #444; outline-offset:2px; }
+    @page { size:A4; margin:0; }
+    @media print {
+      html, body { background:#fff; }
+      body { padding:0; }
+      .toolbar { display:none !important; }
+      .page { margin:0; box-shadow:none; }
+      img.selected { outline:0; }
+    }
+  </style>
+</head>
+<body contenteditable="true">
+  <div class="toolbar" contenteditable="false">
+    <button onclick="window.print()">PDF로 저장</button>
+    <span>본문 직접 수정 가능 · 이미지 선택 크기</span>
+    <input id="imageSize" type="range" min="30" max="100" value="100" aria-label="이미지 크기">
+  </div>
+
+  <section class="page cover">
+    <p class="kicker">AMES HOUSING · EXPLORATORY DATA ANALYSIS</p>
+    <h1>Question-Driven EDA 결과 리포트</h1>
+    <hr class="rule">
+    <div class="meta">
+      <b>데이터</b><span>Ames Housing 교육용 데이터</span>
+      <b>분석 목적</b><span>주택가격의 주요 영향 요인과 모델링 전 전처리 이슈 도출</span>
+      <b>작성자</b><span>P023 장현진</span>
+      <b>팀원</b><span>곽나현, 김동현, 장현진, 정원규, 최세환, 탁연우</span>
+    </div>
+
+    <div class="summary">
+      <p>이 분석은 결측치와 이상치를 일괄 제거하지 않고 변수의 의미에 따라 처리 방향을 정하는 데 초점을 두었다. 가격은 면적만으로 결정되지 않았으며 전체 품질, 지역, 차고와 지하실 특성이 함께 영향을 주었다. 최종 전처리는 데이터 누수를 방지한 상태에서 변환 전후의 검증 성능을 비교해 결정한다.</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><strong>2,930</strong><span>전체 행 수</span></div>
+      <div class="stat"><strong>15</strong><span>변수 수<br>수치형 11 · 범주형 4</span></div>
+      <div class="stat"><strong>1.74</strong><span>SalePrice 왜도</span></div>
+      <div class="stat"><strong>0.80</strong><span>Overall_Qual과<br>SalePrice 상관계수</span></div>
+    </div>
+
+    <h2>1. 데이터 품질 및 결측치</h2>
+    <p>데이터는 전반적으로 정돈되어 있으나 <code>Garage_Yr_Blt</code>의 최댓값이 2207년으로 확인되어 입력 오류 처리가 필요하다. 결측치는 <code>Garage_Yr_Blt</code> 159개, <code>Garage_Cars</code>와 <code>Total_Bsmt_SF</code>에 각각 1개씩 존재한다.</p>
+    <table>
+      <thead><tr><th style="width:28%">주요 이슈</th><th>판단 및 처리 방향</th></tr></thead>
+      <tbody>
+        <tr><td>Garage_Yr_Blt=2207</td><td>오류값을 결측으로 변경한 뒤 차고 유무에 따라 조건부 대체</td></tr>
+        <tr><td>차고 없음</td><td><code>Garage_Yr_Blt=0</code>, <code>Has_Garage=0</code>으로 처리</td></tr>
+        <tr><td>차고 존재·연도 결측</td><td><code>Year_Built</code>와의 높은 상관(0.83)을 근거로 해당 값으로 대체</td></tr>
+        <tr><td>Garage_Cars 결측</td><td>차고 연도가 있으면 최빈값, 차고 연도도 없으면 0으로 대체</td></tr>
+        <tr><td>Total_Bsmt_SF 결측</td><td>결측 1건이며 <code>Gr_Liv_Area</code>와 상관이 약 0.44이므로 신뢰도 있는 보간 대신 해당 행 제거</td></tr>
+      </tbody>
+    </table>
+
+    <h2>2. Target 분포 및 이상치</h2>
+    <div class="two">
+      <div>
+        <h3>SalePrice 분포</h3>
+        <p>평균 180,796, 중앙값 160,000으로 오른쪽 꼬리가 길다. 일부 고가 주택이 평균을 끌어올리므로 일반적인 가격 설명에는 중앙값이 적절하다. 모델링에서는 <code>log1p(SalePrice)</code> 적용 전후의 왜도와 검증 성능을 비교한다.</p>
+      </div>
+      <div>
+        <h3>이상치 판단</h3>
+        <p>IQR 기준 후보는 Overall_Cond, SalePrice, Lot_Area, Total_Bsmt_SF, Gr_Liv_Area에서 확인되었다. 순서형인 Overall_Cond는 IQR 대상에서 제외하고 정상 범위를 벗어난 값만 오류로 판단한다.</p>
+      </div>
+    </div>
+    <div class="note"><b>보존 판단:</b> Gr_Liv_Area가 약 4,500~5,600이고 품질이 높지만 가격이 낮은 2~3개 관측치는 실제 주택 특성일 수 있다. 입력 오류 근거가 없으므로 삭제하지 않는다.</div>
+  </section>
+
+  <section class="page compact">
+    <h2>3. 가격 영향 변수와 파생변수</h2>
+    <p>SalePrice와의 상관계수는 <code>Overall_Qual</code> 0.80, <code>Gr_Liv_Area</code> 0.71, <code>Garage_Cars</code> 0.65, <code>Total_Bsmt_SF</code> 0.63 순으로 높았다. 생활면적뿐 아니라 전체 품질, 차고 규모, 지하실 면적이 함께 가격에 영향을 준다.</p>
+    <table>
+      <thead><tr><th>관찰 결과</th><th>모델링 전 검토 방향</th></tr></thead>
+      <tbody>
+        <tr><td>비슷한 생활면적에서도 Overall_Qual에 따라 가격대가 구분됨</td><td><code>Gr_Liv_Area × Overall_Qual</code> 상호작용 변수를 만들고 성능 변화 확인</td></tr>
+        <tr><td>Overall_Cond는 가격과 약 -0.10, Year_Built와 약 -0.37의 관계</td><td>보수·관리 이력이 상태 점수에 반영되었을 수 있으므로 단순 상관만으로 제거하지 않음</td></tr>
+        <tr><td>Year_Built와 Garage_Yr_Blt의 상관이 0.83</td><td>선형모델의 다중공선성을 고려해 하나를 제거하거나 건축연도 차이를 파생변수로 사용</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. 범주형 변수 처리</h2>
+    <p>Neighborhood별 가격 중앙값은 MeadowV 88,250에서 StoneBr 319,000까지 약 3.6배 차이가 나 지역이 주요 가격 결정 요인임을 확인했다.</p>
+    <table>
+      <thead><tr><th style="width:25%">변수</th><th style="width:25%">유형·특성</th><th>처리 방향</th></tr></thead>
+      <tbody>
+        <tr><td>Kitchen_Qual<br>Exter_Qual</td><td>명확한 순서형</td><td>Po=1, Fa=2, TA=3, Gd=4, Ex=5의 Ordinal Encoding</td></tr>
+        <tr><td>Neighborhood</td><td>28개 범주, 일부 희소</td><td>지역 특성 보존을 위해 전 범주 One-Hot Encoding, <code>handle_unknown='ignore'</code></td></tr>
+        <tr><td>House_Style</td><td>명목형</td><td>One-Hot Encoding</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>데이터 누수 방지:</b> 인코더는 전체 데이터가 아니라 학습 데이터에만 <code>fit</code>한다.</div>
+
+    <h2>5. 최종 전처리 방향</h2>
+    <div class="flow">
+      <div>차고 오류·결측<br>조건부 처리</div><i>→</i>
+      <div>Has_Garage<br>생성</div><i>→</i>
+      <div>지하실 결측<br>1행 제거</div><i>→</i>
+      <div>Target<br>로그 변환</div><i>→</i>
+      <div>범주형<br>인코딩</div><i>→</i>
+      <div>파생변수<br>검토</div>
+    </div>
+    <div class="two">
+      <div>
+        <h3>유지·변환</h3>
+        <ul>
+          <li>Overall_Cond는 순서형 변수로 유지</li>
+          <li>품질 변수는 Ordinal Encoding 적용</li>
+          <li>지역과 주택 형태는 One-Hot Encoding 적용</li>
+          <li>면적×품질 상호작용 변수 검토</li>
+        </ul>
+      </div>
+      <div>
+        <h3>검증 기준</h3>
+        <ul>
+          <li>Target 로그 변환 전후 왜도 비교</li>
+          <li>파생변수 적용 전후 검증 성능 비교</li>
+          <li>건축연도 변수의 다중공선성 확인</li>
+          <li>최종 처리 방법은 검증 결과로 결정</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>6. 결론과 한계·개선 방향</h2>
+    <p>주택가격은 면적뿐 아니라 품질, 지역, 차고 및 지하실 특성에 의해 복합적으로 결정되었다. 결측치와 이상치는 실제 주택 특성을 포함할 수 있으므로 변수 의미에 따른 조건부 처리가 필요하다.</p>
+    <table>
+      <thead><tr><th>현재 한계</th><th>발생 가능한 영향</th><th>개선·확인 방법</th></tr></thead>
+      <tbody>
+        <tr><td>고가 주택으로 인한 Target의 오른쪽 치우침</td><td>평균 중심 해석과 모델 학습이 일부 관측치에 민감해질 수 있음</td><td><code>log1p</code> 변환 전후 왜도와 검증 성능 비교</td></tr>
+        <tr><td>큰 면적·낮은 가격 관측치의 원인이 불명확</td><td>일괄 삭제 시 실제 시장 특성을 잃을 수 있음</td><td>오류 근거가 없으므로 보존하고 모델 영향 확인</td></tr>
+        <tr><td>건축연도와 차고연도의 높은 상관</td><td>선형모델에서 다중공선성 가능</td><td>변수 선택 또는 연도 차이 파생변수의 성능 비교</td></tr>
+      </tbody>
+    </table>
+    <div class="summary"><p><b>최종 정리:</b> 이번 EDA에서 정한 전처리 방향은 확정 답안이 아니라 검증할 가설이다. 각 처리와 파생변수의 효과를 동일한 검증 조건에서 비교한 뒤 최종 파이프라인에 반영한다.</p></div>
+  </section>
+
+  <script>
+    let selectedImage = null;
+    document.addEventListener('click', (event) => {
+      document.querySelectorAll('img.selected').forEach((img) => img.classList.remove('selected'));
+      if (event.target.matches('img.report-image')) {
+        selectedImage = event.target;
+        selectedImage.classList.add('selected');
+        document.getElementById('imageSize').value = parseInt(selectedImage.style.width || '100', 10);
+      } else if (!event.target.closest('.toolbar')) selectedImage = null;
+    });
+    document.getElementById('imageSize').addEventListener('input', (event) => {
+      if (selectedImage) selectedImage.style.width = event.target.value + '%';
+    });
+    document.addEventListener('paste', (event) => {
+      const imageItem = [...event.clipboardData.items].find((item) => item.type.startsWith('image/'));
+      if (!imageItem) return;
+      event.preventDefault();
+      const image = document.createElement('img');
+      image.className = 'report-image';
+      image.src = URL.createObjectURL(imageItem.getAsFile());
+      image.style.width = '100%';
+      const selection = window.getSelection();
+      if (selection.rangeCount) selection.getRangeAt(0).insertNode(image);
+    });
+  </script>
+</body>
+</html>

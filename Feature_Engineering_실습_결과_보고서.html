@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feature Engineering 실습 결과 보고서</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { --ink:#171717; --muted:#666; --line:#d4d6d8; --soft:#f3f4f5; --accent:#345f92; }
+    html, body { margin:0; background:#e9eaec; color:var(--ink); font-family:"Apple SD Gothic Neo","Noto Sans KR",Arial,sans-serif; }
+    body { padding:18px 0 44px; }
+    .toolbar { position:sticky; top:10px; z-index:10; width:210mm; margin:0 auto 12px; padding:9px 13px; display:flex; align-items:center; gap:11px; border-radius:7px; background:#222; color:#fff; font-size:11px; }
+    .toolbar button { border:0; border-radius:4px; padding:8px 13px; background:#fff; color:#111; font-weight:700; cursor:pointer; }
+    .toolbar input { width:95px; accent-color:#fff; }
+    .page { width:210mm; height:297mm; margin:0 auto; padding:13mm 15mm; overflow:hidden; background:#fff; box-shadow:0 2px 14px #0002; }
+    header { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; padding-bottom:9px; border-bottom:1px solid #222; }
+    h1 { margin:0; font-size:23px; line-height:1.25; letter-spacing:-.04em; }
+    .author { flex:none; font-size:10.5px; font-weight:700; }
+    .lead { margin:9px 0 8px; font-size:9.8px; line-height:1.48; color:#333; }
+    h2 { margin:9px 0 5px; padding-bottom:4px; border-bottom:1px solid #333; font-size:13px; letter-spacing:-.02em; }
+    h3 { margin:0 0 4px; font-size:10.5px; }
+    p { margin:2px 0 5px; font-size:8.9px; line-height:1.46; word-break:keep-all; }
+    code { padding:1px 3px; border-radius:3px; background:#eceeef; color:#111; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.93em; }
+    table { width:100%; border-collapse:collapse; table-layout:fixed; margin:4px 0 7px; font-size:8px; line-height:1.38; }
+    th, td { border:1px solid var(--line); padding:4px 5px; vertical-align:top; word-break:keep-all; }
+    th { background:var(--soft); text-align:left; }
+    .decision th:nth-child(1) { width:19%; }
+    .decision th:nth-child(2) { width:18%; }
+    .decision th:nth-child(3) { width:32%; }
+    .four { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
+    .qa { min-height:67px; padding:7px 9px; border:1px solid var(--line); }
+    .qa b { display:block; margin-bottom:3px; font-size:9.5px; }
+    .qa p { margin:0; }
+    .result-chart { width:100%; max-height:43mm; object-fit:contain; margin:2px auto 5px; border:1px solid #eee; }
+    .result-grid { display:grid; grid-template-columns:.72fr 1.28fr; gap:9px; align-items:center; }
+    .result-table { width:100%; max-height:24mm; object-fit:contain; margin:0; background:#303030; }
+    .note { padding:7px 9px; background:var(--soft); border-left:3px solid #444; font-size:8.4px; line-height:1.45; }
+    .flow { display:flex; gap:4px; align-items:stretch; margin:5px 0 7px; }
+    .flow div { flex:1; padding:5px 4px; border:1px solid var(--line); text-align:center; font-size:7.5px; line-height:1.32; }
+    .flow i { align-self:center; color:#777; font-style:normal; }
+    img.report-image { display:block; max-width:100%; height:auto; margin:5px auto; }
+    img.selected { outline:2px dashed #444; outline-offset:2px; }
+    @page { size:A4; margin:0; }
+    @media print {
+      html, body { background:#fff; }
+      body { padding:0; }
+      .toolbar { display:none !important; }
+      .page { margin:0; box-shadow:none; }
+      img.selected { outline:0; }
+    }
+  </style>
+</head>
+<body contenteditable="true">
+  <div class="toolbar" contenteditable="false">
+    <button onclick="window.print()">PDF로 저장</button>
+    <span>본문 직접 수정 가능 · 수정 후 바로 PDF로 저장하세요.</span>
+    <input id="imageSize" type="range" min="30" max="100" value="100" aria-label="이미지 크기">
+  </div>
+
+  <main class="page">
+    <header>
+      <h1>Feature Engineering 실습 결과 보고서</h1>
+      <div class="author">P023 장현진</div>
+    </header>
+
+    <p class="lead">Ames Housing 데이터의 EDA 결과를 바탕으로 결측·오류 처리, 범주형 인코딩, 파생변수를 적용하고 선형회귀 성능 변화를 확인했다. 전처리 기준은 학습 데이터에서 정하고 평가 데이터에는 동일하게 적용하는 것을 원칙으로 했다.</p>
+
+    <h2>1. 무엇을 바꾸었고, 어떤 변화를 기대했는가?</h2>
+    <table class="decision">
+      <thead><tr><th>구분</th><th>적용 방법</th><th>선택 근거</th><th>기대 변화</th></tr></thead>
+      <tbody>
+        <tr><td>Neighborhood</td><td>원-핫 인코딩</td><td>순서가 없는 지역명을 독립적인 이진 열로 분리</td><td>임의의 순서·거리 학습을 막고 지역별 가격 차이 반영</td></tr>
+        <tr><td>House_Style</td><td>더미 인코딩</td><td>기준 범주 하나를 제거해 더미 변수 트랩 방지</td><td>절편이 있는 선형모델에서 다중공선성 완화</td></tr>
+        <tr><td>Kitchen_Qual<br>Exter_Qual</td><td>순서형 라벨 인코딩</td><td><code>Po&lt;Fa&lt;TA&lt;Gd&lt;Ex</code>의 명확한 품질 순서를 정수로 보존</td><td>열 증가 없이 품질 상승 방향을 모델에 반영</td></tr>
+        <tr><td>차고 결측·오류</td><td>조건부 대체</td><td><code>Garage_Cars≥1</code>이고 연도 결측이면 <code>Year_Built</code>로 대체(상관 0.83), 차고 0대이면 차고 없음으로 처리</td><td>차고 부재와 단순 누락을 구분해 정보 손실과 왜곡 감소</td></tr>
+        <tr><td>차고연도 이상값</td><td>2207년 1건만 오류 처리</td><td>데이터에 2027년은 없고 <code>Garage_Yr_Blt=2207</code> 1건이 확인됨</td><td>실제 대형 주택 등 정상 관측치는 보존하고 명백한 연도 오류만 교정</td></tr>
+      </tbody>
+    </table>
+
+    <h2>2. 파생변수 설계</h2>
+    <div class="flow">
+      <div><b>Bath_per_Bedroom</b><br>Full_Bath / Bedroom_AbvGr<br>침실 대비 욕실 편의성</div><i>→</i>
+      <div><b>Lot_Coverage</b><br>Gr_Liv_Area / Lot_Area<br>대지 대비 생활면적 밀도</div><i>→</i>
+      <div><b>Overall_Score</b><br>Overall_Qual × Overall_Cond<br>품질과 상태의 결합 효과</div>
+    </div>
+    <p>비율 변수는 분모가 0인 경우를 별도로 처리해야 한다. 세 변수 모두 Target인 <code>SalePrice</code>를 계산에 사용하지 않아 직접적인 데이터 누수를 피한다.</p>
+
+    <h2>3. 실제로 어떤 현상이 나타났는가?</h2>
+    <img class="report-image result-chart" src="image.png" alt="Baseline과 Feature Engineering의 MAE, RMSE, Adjusted R² 비교 그래프">
+    <div class="result-grid">
+      <img class="report-image result-table" src="image (1).png" alt="Baseline과 Feature Engineering 성능 비교 결과표">
+      <div class="note"><b>관찰 결과</b><br>MAE는 23,759.25에서 16,847.93으로 29.09%, RMSE는 38,577.25에서 28,405.78로 26.37% 감소했다. Adjusted R²는 0.81에서 0.89로 0.08 증가했다. 평균 오차와 큰 오차가 함께 줄면서 설명력도 높아진 방향이다. 저장된 노트북에는 실행 출력이 없어 해당 수치는 제공된 결과 이미지에 근거한다.</div>
+    </div>
+
+    <h2>4. 결과에서 무엇을 알 수 있었는가?</h2>
+    <div class="four">
+      <div class="qa"><b>① 변수 의미를 반영한 처리가 중요했다.</b><p>차고연도 결측을 모두 같은 값으로 채우기보다 차고 유무를 먼저 판단하면 ‘차고 없음’과 ‘연도 누락’을 구분할 수 있다.</p></div>
+      <div class="qa"><b>② 범주형 변수마다 맞는 인코딩이 달랐다.</b><p>명목형은 원-핫·더미, 품질 등급은 순서형 인코딩을 사용해야 불필요한 순서 왜곡과 열 증가를 줄일 수 있다.</p></div>
+      <div class="qa"><b>③ 파생변수는 관계를 직접 표현했다.</b><p>단일 변수만으로 드러나기 어려운 편의성, 밀도, 품질×상태의 결합 효과를 회귀모델이 활용할 수 있게 했다.</p></div>
+      <div class="qa"><b>④ 성능 향상 원인은 분리 검증이 필요하다.</b><p>현재 결과는 여러 처리를 함께 적용한 비교다. 다음에는 인코딩·결측 처리·파생변수를 하나씩 추가하는 실험으로 각 기여도를 확인한다.</p></div>
+    </div>
+  </main>
+
+  <script>
+    let selectedImage = null;
+    document.addEventListener('click', (event) => {
+      document.querySelectorAll('img.selected').forEach((img) => img.classList.remove('selected'));
+      if (event.target.matches('img.report-image')) {
+        selectedImage = event.target;
+        selectedImage.classList.add('selected');
+        document.getElementById('imageSize').value = parseInt(selectedImage.style.width || '100', 10);
+      } else if (!event.target.closest('.toolbar')) selectedImage = null;
+    });
+    document.getElementById('imageSize').addEventListener('input', (event) => {
+      if (selectedImage) selectedImage.style.width = event.target.value + '%';
+    });
+    document.addEventListener('paste', (event) => {
+      const item = [...event.clipboardData.items].find((entry) => entry.type.startsWith('image/'));
+      if (!item) return;
+      event.preventDefault();
+      const image = document.createElement('img');
+      image.className = 'report-image';
+      image.src = URL.createObjectURL(item.getAsFile());
+      image.style.width = '100%';
+      const selection = window.getSelection();
+      if (selection.rangeCount) selection.getRangeAt(0).insertNode(image);
+    });
+  </script>
+</body>
+</html>
